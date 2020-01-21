@@ -8,7 +8,7 @@ import select
 import readline
 import glob
 import platform
-import urllib
+import urllib.request
 import sys
 
 # tab completion
@@ -27,8 +27,6 @@ readline.set_completer(complete)
 # end tab completion
 
 # color scheme for core
-
-
 class bcolors:
     PURPLE = '\033[95m'
     CYAN = '\033[96m'
@@ -51,11 +49,18 @@ class bcolors:
 
 # custom parser for zaproxy
 def zaproxy():
-    file = urllib.urlopen('https://raw.githubusercontent.com/zaproxy/zap-admin/master/ZapVersions.xml')
-    data = file.readlines()
-    file.close()
-    for url in data:
-        if "Linux.tar.gz" in url and "<url>" in url: return url.rstrip().replace("<url>", "").replace("</url>", "").strip()
+    if sys.version_info > (3,0):
+        file = urllib.request.urlopen('https://raw.githubusercontent.com/zaproxy/zap-admin/master/ZapVersions.xml')
+        data = file.readlines()
+        file.close()
+        for url in data:
+            if b'Linux.tar.gz' in url and b'<url>' in url: return url.decode('utf-8').replace("<url>", "").replace("</url>", "").strip()
+    else:
+        file = urllib.urlopen('https://raw.githubusercontent.com/zaproxy/zap-admin/master/ZapVersions.xml')
+        data = file.readlines()
+        file.close()
+        for url in data:
+            if "Linux.tar.gz" in url and "<url>" in url: return url.rstrip().replace("<url>", "").replace("</url>", "").strip()
 
 
 # get the main SET path
@@ -110,7 +115,7 @@ def count_modules():
     return counter
 
 # version information
-grab_version = "2.1.3"
+grab_version = "2.3.7"
 
 # banner
 banner = bcolors.RED + r"""
@@ -149,7 +154,7 @@ banner += """        		   """ + bcolors.backBlue + \
     """Version: %s""" % (grab_version) + bcolors.ENDC + "\n"
 
 banner += bcolors.YELLOW + bcolors.BOLD + """		    Codename: """ + \
-    bcolors.BLUE + """Tool Warehouse Depot""" + "\n"
+    bcolors.BLUE + """All the Tools""" + "\n"
 
 banner += """		         """ + bcolors.ENDC + bcolors.backRed + \
     """Red Team Approved""" + bcolors.ENDC + "\n"
@@ -161,7 +166,6 @@ banner += """		 Written by: """ + bcolors.BOLD + \
     """Dave Kennedy (ReL1K)""" + bcolors.ENDC + "\n"
 banner += """		Twitter: """ + bcolors.BOLD + \
     """@HackingDave, @TrustedSec""" + bcolors.ENDC + "\n"
-banner += """                          """ + """Freenode: """ + bcolors.BOLD + """##PTF""" + bcolors.ENDC
 banner += """\n                    """ + bcolors.BOLD + """https://www.trustedsec.com
         """ + bcolors.ENDC
 banner += bcolors.BOLD + """\n              The easy way to get the new and shiny.
@@ -222,7 +226,7 @@ def module_parser(filename, term):
             filename_short = filename.replace(definepath() + "/", "")
             filename_short = filename_short.replace(".py", "")
             if term not in "BYPASS_UPDATE|LAUNCHER|TOOL_DEPEND|X64_LOCATION|install_update_all|FEDORA|OPENBSD|ARCHLINUX":
-                              if filename_short not in "__init__|msfdb.sh":
+                              if filename_short not in "__init__|msfdb.sh|modules/custom_list/list":
                                         print_error("Warning, module %s was found but contains no %s field." % (filename_short, term))
                                         print_error("Check the module again for errors and try again.")
                                         print_error("Module has been removed from the list.")
@@ -440,7 +444,7 @@ def auto_update():
             "If you want to turn this off, go to the PTF directory and go to config and change AUTO_UPDATE")
         if profile_os() == "DEBIAN":
             subprocess.Popen(
-                "sudo apt-get update && sudo apt-get -y upgrade && sudo apt-get dist-upgrade -y && apt-get -q --force-yes -y install build-essential && sudo apt-get autoremove -y && apt-get autoclean -y && updatedb", shell=True).wait()
+                "sudo apt-get update && sudo apt-get -y upgrade && sudo apt-get dist-upgrade -y && apt-get -q --allow-downgrades --allow-remove-essential --allow-change-held-packages -y install build-essential && sudo apt-get autoremove -y && apt-get autoclean -y && updatedb", shell=True).wait()
         print_status(
             "Finished with normal package updates, moving on to the tools section..")
     else:
